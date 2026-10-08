@@ -1,4 +1,4 @@
-# Vortex Bank System v0.1
+# Vortex Bank System v0.2
 
 from decimal import Decimal, InvalidOperation
 
@@ -18,7 +18,7 @@ class User:
     def deposit(self, amount):
         if amount <= 0:
             print("Deposit amount must be greater than zero.")
-            return
+            return False
 
         self.balance += amount
 
@@ -26,21 +26,19 @@ class User:
             f"Deposited R{amount:.2f}"
         )
 
-        print(
-            f"R{amount:.2f} deposited successfully."
-        )
-        print(
-            f"New balance: R{self.balance:.2f}"
-        )
+        print(f"R{amount:.2f} deposited successfully.")
+        print(f"New balance: R{self.balance:.2f}")
+
+        return True
 
     def withdraw(self, amount):
         if amount <= 0:
             print("Withdrawal amount must be greater than zero.")
-            return
+            return False
 
         if amount > self.balance:
             print("Insufficient funds.")
-            return
+            return False
 
         self.balance -= amount
 
@@ -48,12 +46,10 @@ class User:
             f"Withdrew R{amount:.2f}"
         )
 
-        print(
-            f"R{amount:.2f} withdrawn successfully."
-        )
-        print(
-            f"New balance: R{self.balance:.2f}"
-        )
+        print(f"R{amount:.2f} withdrawn successfully.")
+        print(f"New balance: R{self.balance:.2f}")
+
+        return True
 
     def check_balance(self):
         print(
@@ -83,6 +79,10 @@ def register_user(users):
 
     username = input("Enter username: ").strip()
 
+    if not username:
+        print("Username cannot be empty.")
+        return
+
     if username in users:
         print(
             "Username already exists. "
@@ -91,6 +91,11 @@ def register_user(users):
         return
 
     password = input("Enter password: ").strip()
+
+    if not password:
+        print("Password cannot be empty.")
+        return
+
     email = input("Enter email: ").strip()
 
     users[username] = User(
@@ -118,9 +123,7 @@ def login_user(users):
         user = users[username]
 
         if user.password == password:
-            print(
-                f"\nWelcome back, {username}!"
-            )
+            print(f"\nWelcome back, {username}!")
             return user
 
     print("Invalid username or password.")
@@ -154,10 +157,69 @@ def get_amount():
 
 
 # =========================
+# TRANSFER FUNDS
+# =========================
+
+def transfer_funds(sender, users):
+
+    print("\n--- Transfer Funds ---")
+
+    recipient_username = input(
+        "Enter recipient username: "
+    ).strip()
+
+    # Check whether recipient exists
+    if recipient_username not in users:
+        print("Recipient does not exist.")
+        return
+
+    # Prevent transferring to yourself
+    if recipient_username == sender.username:
+        print("You cannot transfer money to yourself.")
+        return
+
+    recipient = users[recipient_username]
+
+    # Get transfer amount
+    amount = get_amount()
+
+    # Check sender has enough money
+    if amount > sender.balance:
+        print("Insufficient funds.")
+        return
+
+    # Perform transfer
+    sender.balance -= amount
+    recipient.balance += amount
+
+    # Record sender transaction
+    sender.transactions.append(
+        f"Transferred R{amount:.2f} to "
+        f"{recipient.username}"
+    )
+
+    # Record recipient transaction
+    recipient.transactions.append(
+        f"Received R{amount:.2f} from "
+        f"{sender.username}"
+    )
+
+    print(
+        f"\nR{amount:.2f} successfully transferred "
+        f"to {recipient.username}."
+    )
+
+    print(
+        f"Your new balance: "
+        f"R{sender.balance:.2f}"
+    )
+
+
+# =========================
 # DASHBOARD
 # =========================
 
-def dashboard(user):
+def dashboard(user, users):
 
     while True:
 
@@ -184,36 +246,23 @@ def dashboard(user):
             "\nEnter your choice: "
         ).strip()
 
+        # Account settings
+        if choice == "1":
+            print("\n--- Account Settings ---")
+            print(f"Username: {user.username}")
+            print(f"Email: {user.email}")
+
         # Check balance
-        if choice == "2":
+        elif choice == "2":
             user.check_balance()
 
         # Transaction history
         elif choice == "3":
             user.show_transactions()
 
-        # Deposit
-        elif choice == "7":
-            amount = get_amount()
-            user.deposit(amount)
-
-        # Withdraw
-        elif choice == "8":
-            amount = get_amount()
-            user.withdraw(amount)
-
-        # Account settings
-        elif choice == "1":
-            print("\n--- Account Settings ---")
-            print(f"Username: {user.username}")
-            print(f"Email: {user.email}")
-
-        # Transfer
+        # Transfer funds
         elif choice == "4":
-            print(
-                "\nTransfer Funds will be implemented "
-                "in the next version."
-            )
+            transfer_funds(user, users)
 
         # Beneficiaries
         elif choice == "5":
@@ -228,6 +277,16 @@ def dashboard(user):
                 "\nAnalytics & Reports will be "
                 "implemented in the next version."
             )
+
+        # Deposit
+        elif choice == "7":
+            amount = get_amount()
+            user.deposit(amount)
+
+        # Withdraw
+        elif choice == "8":
+            amount = get_amount()
+            user.withdraw(amount)
 
         # Logout
         elif choice == "9":
@@ -274,10 +333,11 @@ def main():
 
         # Login
         elif choice == "2":
+
             user = login_user(users)
 
             if user:
-                dashboard(user)
+                dashboard(user, users)
 
         # Exit
         elif choice == "3":
