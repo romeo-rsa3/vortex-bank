@@ -1,4 +1,3 @@
-```python
 # Vortex Bank System v0.1
 
 from decimal import Decimal, InvalidOperation
